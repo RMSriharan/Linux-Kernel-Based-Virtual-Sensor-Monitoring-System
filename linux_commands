@@ -1,0 +1,49 @@
+# Go to your project folder
+cd ~/sensor_monitor || { echo "Folder not found!"; exit 1; }
+
+# Install dependencies
+sudo apt update && sudo apt install -y build-essential linux-headers-$(uname -r) python3 python3-pip
+
+# Build the kernel module
+make
+
+# Insert the kernel module
+sudo insmod sensor_monitor.ko
+
+# Verify module is loaded
+lsmod | grep sensor_monitor
+
+# Check kernel messages
+sudo dmesg | tail
+
+# Check SysFS entries
+echo "Checking /sys/kernel/virtual_sensor/"
+ls /sys/kernel/virtual_sensor/
+echo "Temperature:" && cat /sys/kernel/virtual_sensor/temp
+echo "Pressure:" && cat /sys/kernel/virtual_sensor/pressure
+
+# Run logger script for 60 seconds
+echo "Logging sensor data for 60 seconds..."
+python3 read_sensor.py --duration 60
+
+# Confirm CSV log created
+ls | grep sensor_log.csv
+
+# Install matplotlib
+pip3 install matplotlib
+
+# Plot the sensor data
+python3 plot_sensor.py
+
+# Optional: Show CSV contents
+echo "CSV log preview:" && head sensor_log.csv
+
+# Unload the kernel module
+sudo rmmod sensor_monitor
+
+# Clean build files
+make clean
+
+# Done!
+echo "✅ Virtual Sensor Monitoring Project Complete!"
+
